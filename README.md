@@ -17,9 +17,7 @@ timer:edit(from, to, tick): Modify timer settings on the fly while it runs.
 Optional aliasing for naming and identifying timers.
 
 ## 🔧 Use Case Example
-lua
-Copy
-Edit
+```lua
 local Timer = require(path.to.timer)
 
 local t = Timer.new("MatchCountdown")
@@ -27,6 +25,7 @@ t:describe(0, 30, 1)
 t:start(function()
     print("Match started!")
 end)
+```
 ## 🧠 Why Use This?
 Perfect for:
 
