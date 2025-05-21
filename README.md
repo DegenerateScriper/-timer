@@ -1,332 +1,133 @@
---[[
-    timer.luau
-    Simple timer utility for Roblox
-    @author      @XiK_Z
-    @license     MIT
-    @within      timer
-    @description
-        A lightweight timer module for Roblox Luau, supporting start, stop, and configurable intervals.
-]]
+## 🧠 What Is This Module?
+This is a timer module for Roblox. Imagine you want to run something after a delay, like showing a countdown, triggering a game event, or managing a round timer. This module lets you create a timer that counts up at regular intervals, and you can start, stop, reset, and even edit it while it runs.
 
-export type Timer = {
-	time: number,
-	from: number,
-	to: number,
-	tick: number,
-	totalTime: number,
-	running: boolean,
-	alias: string,
+## 🔧 How Do You Use It?
+### 1. Require the Module
+First, put timer.lua somewhere like ReplicatedStorage or ServerScriptService, then require it:
 
-	describe: (self: Timer, from: number, to: number, tick: number) -> (),
-	start: (self: Timer, Callback: (() -> ())?) -> (),
-	reset: (self: Timer) -> (),
-	resetTo: (self: Timer, to: number) -> (),
-	getTime: (self: Timer) -> number,
-	getTotalTime: (self: Timer) -> number,
-	getAlias: (self: Timer) -> string,
-	getTick: (self: Timer) -> number,
-	getFrom: (self: Timer) -> number,
-	getTo: (self: Timer) -> number,
-	getRunning: (self: Timer) -> boolean,
-	getTimeLeft: (self: Timer) -> number,
-	getTimePassed: (self: Timer) -> number,
-	getTimePassedPercent: (self: Timer) -> number,
-	getTimeLeftPercent: (self: Timer) -> number,
-	edit: (self: Timer, from: number, to: number, tick: number) -> (),
-	stop: (self: Timer) -> (),
-}
+```lua
+local Timer = require(game.ReplicatedStorage.timer)
+```
+### 2. Create a Timer Instance
+To use the timer, you create one:
 
-local timer = {}
-timer.__index = timer
+```lua
+local myTimer = Timer.new("RoundTimer")
+```
+You can name it anything — this name is mostly for logging and organization. It doesn't affect functionality.
 
---[[
-    Creates a new timer instance.
-    @param alias string -- Optional name for the timer.
-    @return timer -- The new timer object.
-    @example
-    ```lua
-    local t = timer.new("MyTimer")
-    ```
-]]
-function timer.new(alias : string)
-	assert(typeof(alias) == "string", "alias must be a string")
-	local self = setmetatable({}, timer)
-	self.time = 0
-	self.from = 0
-	self.to = 0
-	self.tick = 0
-	self.totalTime = tick()
-	self.running = false
-	if not alias then alias = "Timer" end
-	self.alias = alias
-	return self
-end
+### 3. Set Up the Timer (Describe It)
+Before the timer can run, you need to tell it what it should do. This is where you use :describe().
 
---[[
-    Describes the timer's range and tick interval.
-    @param from number -- Start time.
-    @param to number -- End time.
-    @param tick number -- Interval between ticks (default 1).
-    @example
-    ```lua
-    t:describe(0, 10, 1)
-    ```
-]]
-function timer:describe(from : number, to : number, tick : number)
-	assert(typeof(from) == "number", "from must be a number")
-	assert(typeof(to) == "number", "to must be a number")
-	self.from = from
-	self.to = to
-	self.time = 0
-	if not tick then tick = 1 end
-	assert(typeof(tick) == "number", "tick must be a number")
-	self.tick = tick
-    return self
-end
+```lua
+myTimer:describe(0, 10, 1)
+```
+This means:
 
---[[
-    Starts the timer. Increments time by tick until reaching 'to'.
-    Optionally accepts a callback to run when the timer completes.
-    @param Callback function? -- Function to call when timer finishes.
-    @example
-    ```lua
-    t:start(function()
-        print("Timer finished!")
-    end)
-    ```
-]]
-function timer:start(Callback : ((self : Timer) -> ()))
-	if Callback then
-		assert(typeof(Callback) == "function", "Callback must be a function")
-	end
-	assert(not self.running, string.format("%s is already running", self.alias))
-	self.running = true
-	self.time = self.from
-	task.spawn(function()
-		while self.running do
-			if self.tick > self.time then
-				warn(string.format("%s tick is greater than time", self.alias))
-			end
-			task.wait(self.tick)
-			if self.time < self.to then
-				self.time += self.tick
-			else
-				self:stop()
-				if Callback then
-					Callback(self)
-				end
-				self.time = self.to
-			end
-		end
-	end)
-    return self
-end
+Start at 0
 
---[[
-    Resets the timer to the starting value.
-    @example
-    ```lua
-    t:reset()
-    ```
-]]
-function timer:reset()
-	assert(self.running, string.format("%s is not running", self.alias))
-	self.time = self.from
-    return self
-end
+Count up to 10
 
---[[
-    Resets the timer to a specific value.
-    @param to number -- The value to reset the timer to.
-    @example
-    ```lua
-    t:resetTo(5)
-    ```
-]]
-function timer:resetTo(to : number)
-	assert(self.running, string.format("%s is not running", self.alias))
-	assert(typeof(to) == "number", "to must be a number")
-	self.time = to
-    return self
-end
+Increase by 1 every time
 
---[[
-    Gets the current timer value.
-    @return number -- The current time.
-    @example
-    ```lua
-    print(t:getTime())
-    ```
-]]
-function timer:getTime()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.time
-end
+So every second (assuming 1 tick = 1 second), it will go:
 
---[[
-    Gets the total time since the timer was created.
-    @return number -- The total time.
-    @example
-    ```lua
-    print(t:getTotalTime())
-    ```
-]]
-function timer:getTotalTime()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.totalTime
-end
+```
+0 → 1 → 2 → 3 → ... → 10
+```
+You can make it tick faster or slower by changing that last number.
 
---[[
-    Gets the timer's alias.
-    @return string -- The alias.
-    @example
-    ```lua
-    print(t:getAlias())
-    ```
-]]
-function timer:getAlias()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.alias
-end
+### 4. Start the Timer
+Now let’s make it go:
 
---[[
-    Gets the tick interval.
-    @return number -- The tick interval.
-    @example
-    ```lua
-    print(t:getTick())
-    ```
-]]
-function timer:getTick()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.tick
-end
+```lua
+myTimer:start(function(timer)
+	print(timer:getAlias() .. " finished!")
+end)
+```
+What happens:
 
---[[
-    Gets the starting value.
-    @return number -- The starting value.
-    @example
-    ```lua
-    print(t:getFrom())
-    ```
-]]
-function timer:getFrom()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.from
-end
+The timer starts at the from value (0).
 
---[[
-    Gets the ending value.
-    @return number -- The ending value.
-    @example
-    ```lua
-    print(t:getTo())
-    ```
-]]
-function timer:getTo()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.to
-end
+It increases by tick every few seconds.
 
---[[
-    Checks if the timer is running.
-    @return boolean -- True if running, false otherwise.
-    @example
-    ```lua
-    print(t:getRunning())
-    ```
-]]
-function timer:getRunning()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.running
-end
+When it reaches to (10), it automatically stops.
 
---[[
-    Gets the time left until the timer completes.
-    @return number -- Time left.
-    @example
-    ```lua
-    print(t:getTimeLeft())
-    ```
-]]
-function timer:getTimeLeft()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.to - self.time
-end
+If you gave it a function (like we did here), it runs that function at the end.
 
---[[
-    Gets the time passed since the timer started.
-    @return number -- Time passed.
-    @example
-    ```lua
-    print(t:getTimePassed())
-    ```
-]]
-function timer:getTimePassed()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return self.time - self.from
-end
+So this would print:
 
---[[
-    Gets the percent of time passed.
-    @return number -- Percent of time passed (0-1).
-    @example
-    ```lua
-    print(t:getTimePassedPercent())
-    ```
-]]
-function timer:getTimePassedPercent()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return (self.time - self.from) / (self.to - self.from)
-end
+```nginx
+RoundTimer finished!
+```
+You can leave out the function if you just want it to stop silently.
 
---[[
-    Gets the percent of time left.
-    @return number -- Percent of time left (0-1).
-    @example
-    ```lua
-    print(t:getTimeLeftPercent())
-    ```
-]]
-function timer:getTimeLeftPercent()
-	assert(self.running, string.format("%s is not running", self.alias))
-	return (self.to - self.time) / (self.to - self.from)
-end
+### 5. Stop the Timer Early
+If you want to cancel the timer before it finishes:
 
---[[
-    Edits the timer's range and tick interval while running.
-    @param from number -- New start time.
-    @param to number -- New end time.
-    @param tick number -- New tick interval (default 1).
-    @example
-    ```lua
-    t:edit(0, 20, 2)
-    ```
-]]
-function timer:edit(from : number, to : number, tick : number)
-	assert(self.running, string.format("%s is not running", self.alias))
-	assert(typeof(from) == "number", "from must be a number")
-	assert(typeof(to) == "number", "to must be a number")
-	self.from = from
-	self.to = to
-	self.time = from
-	if not tick then tick = 1 end
-	assert(typeof(tick) == "number", "tick must be a number")
-	self.tick = tick
-    return self
-end
+```lua
+myTimer:stop()
+```
+This stops it immediately. Useful if something else happens, like the player leaving or the game ending early.
 
---[[
-    Stops the timer.
-    @example
-    ```lua
-    t:stop()
-    ```
-]]
-function timer:stop()
-	assert(self.running, string.format("%s is not running", self.alias))
-	self.running = false
-    return self
-end
+### 6. Reset the Timer
+You’ve got two ways to reset it:
 
-return timer
+:reset() – puts it back at the starting value (from).
+
+:resetTo(x) – sets it to any number you want.
+
+Example:
+
+```lua
+myTimer:resetTo(5) -- Sets it to 5 manually
+```
+You must call this while the timer is running or it will throw an error.
+
+### 7. Check What’s Going On
+Want to know how far along the timer is? These functions tell you:
+
+```lua
+myTimer:getTime() -- Current value
+myTimer:getTimeLeft() -- How much is left
+myTimer:getTimePassed() -- How much has passed
+myTimer:getTimePassedPercent() -- 0 to 1
+myTimer:getTimeLeftPercent() -- 0 to 1
+myTimer:getRunning() -- Is it running?
+```
+You can use this for a GUI or debug printouts.
+
+### 8. Change It While Running
+Want to make the timer longer or faster after it starts? You can with :edit().
+
+```lua
+myTimer:edit(0, 20, 2) -- Now it counts to 20 in steps of 2
+```
+This restarts the timer with new settings.
+
+### 9. Aliases Are Just Labels
+Remember that "RoundTimer" name? That’s the alias. It doesn’t affect how the timer works — it's just a helpful label.
+
+You can get it like this:
+
+```lua
+print(myTimer:getAlias()) -- "RoundTimer"
+```
+## 📌 Summary
+To Use the Timer:
+```lua
+local Timer = require(...)          -- Get the module
+local t = Timer.new("MyTimer")      -- Make one
+t:describe(0, 5, 1)                 -- Set it to go 0→5 by 1s
+t:start(function() print("Done!") end)  -- Start it
+Optional:
+t:stop() – Stop early
+
+t:reset() – Start over
+
+t:edit() – Change its behavior mid-run
+
+t:getTime() – Track progress
+
+t:getRunning() – Check if it’s going
+```
